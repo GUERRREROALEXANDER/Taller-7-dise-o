@@ -1,0 +1,150 @@
+@startuml 01-modelo-inicial-anotado
+skinparam dpi 150
+skinparam defaultFontSize 13
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam noteBackgroundColor #FFF8DC
+skinparam noteBorderColor #B8860B
+hide empty members
+
+title 01 · Modelo inicial anotado — SmartLibrary (Bloque 7)
+
+class GestorPrestamos {
+  - estudiantes: List<Estudiante>
+  - libros: List<Libro>
+  - prestamos: List<Prestamo>
+  + GestorPrestamos()
+  + registrarPrestamo(e: Estudiante, l: Libro): Prestamo
+  + getEstudiantes(): List<Estudiante>
+  + setEstudiantes(lista: List<Estudiante>): void
+  + getLibros(): List<Libro>
+  + setLibros(lista: List<Libro>): void
+  + getPrestamos(): List<Prestamo>
+  + setPrestamos(lista: List<Prestamo>): void
+}
+
+class Estudiante {
+  - id: Long
+  - nombre: String
+  - correo: String
+  + Estudiante(id: Long, nombre: String, correo: String)
+  + getId(): Long
+  + setId(id: Long): void
+  + getNombre(): String
+  + setNombre(nombre: String): void
+  + getCorreo(): String
+  + setCorreo(correo: String): void
+}
+
+class Libro {
+  - id: Long
+  - titulo: String
+  - disponible: boolean
+  + Libro(id: Long, titulo: String, disponible: boolean)
+  + getId(): Long
+  + setId(id: Long): void
+  + getTitulo(): String
+  + setTitulo(titulo: String): void
+  + isDisponible(): boolean
+  + setDisponible(valor: boolean): void
+  + marcarPrestado(): void
+}
+
+class Prestamo {
+  - id: Long
+  - fechaPrestamo: LocalDate
+  - fechaDevolucion: LocalDate [0..1]
+  - estudiante: Estudiante
+  - libro: Libro
+  + Prestamo(id: Long, fecha: LocalDate, estudiante: Estudiante, libro: Libro)
+  + getId(): Long
+  + setId(id: Long): void
+  + getFechaPrestamo(): LocalDate
+  + setFechaPrestamo(fecha: LocalDate): void
+  + getFechaDevolucion(): LocalDate
+  + setFechaDevolucion(fecha: LocalDate): void
+  + getEstudiante(): Estudiante
+  + setEstudiante(estudiante: Estudiante): void
+  + getLibro(): Libro
+  + setLibro(libro: Libro): void
+}
+
+' Relaciones: asociaciones simples, sin rombos
+GestorPrestamos "1" -- "0..*" Estudiante : registra
+GestorPrestamos "1" -- "0..*" Libro : administra
+GestorPrestamos "1" -- "0..*" Prestamo : gestiona
+Estudiante "1" -- "0..*" Prestamo : historial
+Libro "1" -- "0..*" Prestamo : historial
+
+note as O7
+  <b>O7</b> (asociaciones Libro–Prestamo y Estudiante–Prestamo)
+  Son asociaciones y no composiciones: el préstamo no es
+  "parte" del libro ni del estudiante y sus ciclos de vida
+  son independientes (borrar un préstamo no borra el libro,
+  y el historial sobrevive). Multiplicidad 1 — 0..* correcta:
+  cada préstamo tiene exactamente un estudiante y un libro.
+end note
+O7 .. Libro
+O7 .. Prestamo
+
+note as O8
+  <b>O8</b> (navegabilidad) Solo Prestamo guarda referencias
+  (estudiante, libro); Estudiante y Libro no tienen atributo
+  de lista de préstamos → la asociación realmente es
+  navegable de Prestamo hacia ellos. El "historial" se
+  obtiene por consulta, no por atributo.
+end note
+O8 .. Estudiante
+O8 .. Prestamo
+
+note top of GestorPrestamos
+  <b>O1</b> Baja cohesión: mezcla almacenamiento en memoria
+  (listas), coordinación del caso de uso y regla de negocio.
+  En el rediseño se reparte entre PrestamoService
+  (coordinación) y los Repository (persistencia).
+end note
+
+note left of GestorPrestamos::prestamos
+  <b>O2</b> Las colecciones en memoria no son persistencia:
+  los datos se pierden al reiniciar. Se reemplazan por
+  EstudianteRepository, LibroRepository y
+  PrestamoRepository (Spring Data JPA + H2).
+end note
+
+note left of GestorPrestamos::setPrestamos
+  <b>O3</b> setEstudiantes / setLibros / setPrestamos
+  exponen y permiten reemplazar el estado interno
+  completo → rompe el encapsulamiento.
+end note
+
+note right of GestorPrestamos::registrarPrestamo
+  <b>O4</b> Recibe objetos ya resueltos (Estudiante, Libro);
+  en una API llegan identificadores (estudianteId, libroId),
+  por lo que falta la responsabilidad de buscarlos.
+  Tampoco se ve cómo valida R1/R5 ni qué pasa si el
+  libro no está disponible (R4).
+end note
+
+note left of Libro::setDisponible
+  <b>O5</b> Un setter público permite cambiar la
+  disponibilidad sin pasar por la regla; en el rediseño
+  solo queda marcarPrestado() (Experto en información).
+end note
+
+note "<b>O6</b> Constructores con id: el id lo debe generar\nla persistencia (@GeneratedValue), no quien crea el objeto." as O6
+O6 .. Estudiante
+O6 .. Libro
+O6 .. Prestamo
+
+note right of Prestamo::fechaDevolucion
+  <b>O10</b> Falta una operación para saber si el préstamo
+  está activo (fechaDevolucion == null), necesaria para R5.
+end note
+
+note as O9
+  <b>O9</b> (general) No hay ninguna clase que reciba
+  peticiones HTTP, ni que traduzca errores a códigos
+  404/409, ni manejo de transacción para R3 + R2 juntos.
+end note
+
+@enduml

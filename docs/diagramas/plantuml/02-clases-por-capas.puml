@@ -1,0 +1,197 @@
+@startuml 02-clases-por-capas
+skinparam dpi 150
+skinparam defaultFontSize 13
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam noteBackgroundColor #FFF8DC
+skinparam noteBorderColor #B8860B
+hide empty members
+
+title 02 · Diseño por tres capas — SmartLibrary, caso «Registrar préstamo» (com.smartlibrary)
+
+package "com.smartlibrary.controller" as controller #EAF2FF {
+  class PrestamoController <<RestController>> {
+    .. ruta /api/prestamos ..
+    - prestamoService: PrestamoService
+    + registrarPrestamo(request: PrestamoRequest): ResponseEntity<PrestamoResponse>  «POST → 201»
+    + listarPrestamos(): ResponseEntity<List<PrestamoResponse>>  «GET → 200»
+  }
+}
+
+package "com.smartlibrary.service" as service #EAFBEA {
+  class PrestamoService <<Service>> {
+    - estudianteRepository: EstudianteRepository
+    - libroRepository: LibroRepository
+    - prestamoRepository: PrestamoRepository
+    + registrarPrestamo(request: PrestamoRequest): PrestamoResponse  «transactional»
+    + listarPrestamos(): List<PrestamoResponse>  «transactional readOnly»
+    - validarDisponibilidad(libro: Libro): void
+  }
+}
+
+package "com.smartlibrary.repository" as repository #FFF4E5 {
+  interface "JpaRepository<T, ID>" as JpaRepository <<interface>> {
+    + findById(id: ID): Optional<T>
+    + save(entidad: T): T
+    + findAll(): List<T>
+  }
+  interface EstudianteRepository <<interface>>
+  interface LibroRepository <<interface>>
+  interface PrestamoRepository <<interface>> {
+    + existsByLibroIdAndFechaDevolucionIsNull(libroId: Long): boolean
+  }
+}
+
+package "com.smartlibrary.model" as model #F3F3F3 {
+  class Estudiante <<Entity>> {
+    - id: Long
+    - nombre: String
+    - correo: String
+    + Estudiante(nombre: String, correo: String)
+    + getId(): Long
+    + getNombre(): String
+    + getCorreo(): String
+  }
+  class Libro <<Entity>> {
+    - id: Long
+    - titulo: String
+    - disponible: boolean
+    + Libro(titulo: String, disponible: boolean)
+    + getId(): Long
+    + getTitulo(): String
+    + isDisponible(): boolean
+    + marcarPrestado(): void
+  }
+  class Prestamo <<Entity>> {
+    - id: Long
+    - fechaPrestamo: LocalDate
+    - fechaDevolucion: LocalDate [0..1]
+    - estudiante: Estudiante
+    - libro: Libro
+    + Prestamo(estudiante: Estudiante, libro: Libro, fechaPrestamo: LocalDate)
+    + getId(): Long
+    + getFechaPrestamo(): LocalDate
+    + getFechaDevolucion(): LocalDate
+    + getEstudiante(): Estudiante
+    + getLibro(): Libro
+    + estaActivo(): boolean
+  }
+}
+
+package "com.smartlibrary.dto" as dto #F5EEFF {
+  class PrestamoRequest <<record>> {
+    + estudianteId: Long {NotNull}
+    + libroId: Long {NotNull}
+  }
+  class PrestamoResponse <<record>> {
+    + id: Long
+    + estudianteId: Long
+    + nombreEstudiante: String
+    + libroId: Long
+    + tituloLibro: String
+    + fechaPrestamo: LocalDate
+    + fechaDevolucion: LocalDate
+    {static} + desde(prestamo: Prestamo): PrestamoResponse
+  }
+  class ErrorResponse <<record>> {
+    + timestamp: LocalDateTime
+    + status: int
+    + error: String
+    + mensaje: String
+    + ruta: String
+  }
+}
+
+package "com.smartlibrary.exception" as exception #FFECEC {
+  class RuntimeException <<java.lang>>
+  class RecursoNoEncontradoException {
+    .. → 404 Not Found ..
+  }
+  class LibroNoDisponibleException {
+    .. → 409 Conflict ..
+  }
+  class GlobalExceptionHandler <<RestControllerAdvice>> {
+    + manejarNoEncontrado(ex: RecursoNoEncontradoException): ResponseEntity<ErrorResponse>
+    + manejarNoDisponible(ex: LibroNoDisponibleException): ResponseEntity<ErrorResponse>
+    + manejarValidacion(ex: MethodArgumentNotValidException): ResponseEntity<ErrorResponse>
+  }
+}
+
+' ---------- Colaboración entre capas: asociación dirigida (referencia inyectada por constructor)
+PrestamoController -down-> "1" PrestamoService : prestamoService
+note on link
+  <b>N4</b> Asociación (continua) = referencia mantenida;
+  dependencia (punteada) = uso puntual.
+end note
+PrestamoService -down-> "1" EstudianteRepository : estudianteRepository
+PrestamoService -down-> "1" LibroRepository : libroRepository
+PrestamoService -down-> "1" PrestamoRepository : prestamoRepository
+note on link
+  <b>N5</b> Multiplicidad 1 hacia cada colaborador:
+  el contenedor de Spring inyecta un único bean (singleton).
+end note
+
+' ---------- Asociaciones del dominio (navegables desde Prestamo, sin rombos)
+Prestamo "0..*" -down-> "1" Estudiante : estudiante
+Prestamo "0..*" -down-> "1" Libro : libro\n{R5: a lo sumo un Prestamo activo por Libro}
+
+' ---------- Generalizaciones
+EstudianteRepository -up-|> JpaRepository : <Estudiante, Long>
+LibroRepository -up-|> JpaRepository : <Libro, Long>
+PrestamoRepository -up-|> JpaRepository : <Prestamo, Long>
+RecursoNoEncontradoException -up-|> RuntimeException
+LibroNoDisponibleException -up-|> RuntimeException
+
+' ---------- Dependencias (uso puntual en parámetros / retorno)
+PrestamoController .left.> PrestamoRequest : <<use>>
+PrestamoController .left.> PrestamoResponse : <<use>>
+PrestamoService .left.> PrestamoRequest : <<use>>
+PrestamoService .left.> PrestamoResponse : <<use>>
+PrestamoService ..> Prestamo : <<create>>
+PrestamoService ..> Estudiante : <<use>>
+PrestamoService ..> Libro : <<use>>
+PrestamoService .right.> RecursoNoEncontradoException : <<throw>>
+PrestamoService .right.> LibroNoDisponibleException : <<throw>>
+PrestamoResponse .down.> Prestamo : <<use>>\n(desde)
+EstudianteRepository .left.> Estudiante : <<use>>
+LibroRepository .left.> Libro : <<use>>
+PrestamoRepository .left.> Prestamo : <<use>>
+GlobalExceptionHandler .down.> RecursoNoEncontradoException : <<handle>>
+GlobalExceptionHandler .down.> LibroNoDisponibleException : <<handle>>
+GlobalExceptionHandler .left.> ErrorResponse : <<create>>
+
+' ---------- Notas de justificación
+note as N1
+  <b>N1</b> Dirección de dependencias
+  Controller → Service → Repository;
+  el Controller nunca accede a datos.
+end note
+N1 .. PrestamoController
+
+note as N2
+  <b>N2</b> Regla de disponibilidad (R1, R5) en
+  PrestamoService.validarDisponibilidad usando
+  Libro.isDisponible() y PrestamoRepository.
+  existsByLibroIdAndFechaDevolucionIsNull.
+end note
+N2 .. PrestamoService
+
+note as N3
+  <b>N3</b> registrarPrestamo es transaccional:
+  crear préstamo (R2) y marcar libro (R3) se
+  confirman juntos o se revierten juntos (R4).
+end note
+N3 .. PrestamoService
+
+note bottom of JpaRepository
+  Sin realización hacia los repositorios: la
+  implementación la genera Spring Data en tiempo
+  de ejecución (SimpleJpaRepository); no es una
+  clase nuestra.
+end note
+
+note "model: entidades del dominio. NO son una cuarta capa\nde ejecución; las usan service y repository." as NM
+NM .. Prestamo
+
+@enduml

@@ -1,0 +1,36 @@
+@startuml 04-secuencia-consultar-prestamos
+skinparam dpi 150
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam sequenceMessageAlign left
+skinparam responseMessageBelowArrow true
+skinparam noteBackgroundColor #FFF8DC
+skinparam noteBorderColor #B8860B
+
+title 04 · Secuencia «Consultar préstamos» — GET /api/prestamos
+
+actor "Usuario\n(cliente / Postman)" as Usuario
+participant ":PrestamoController" as C
+participant ":PrestamoService" as S
+participant ":PrestamoRepository" as PR
+participant "PrestamoResponse" as R <<record>>
+
+Usuario -> C : 1: GET /api/prestamos
+activate C
+C -> S : 2: listarPrestamos()
+activate S
+note right of S : transacción de solo lectura\n(@Transactional(readOnly = true))
+S -> PR : 3: findAll()
+PR --> S : List<Prestamo>
+
+loop por cada préstamo
+  S -> R : 4: desde(prestamo)
+  R --> S : PrestamoResponse
+end
+
+S --> C : 5: List<PrestamoResponse>
+deactivate S
+C --> Usuario : 6: 200 OK + JSON lista
+deactivate C
+
+@enduml

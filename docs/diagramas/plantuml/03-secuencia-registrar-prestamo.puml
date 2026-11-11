@@ -1,0 +1,81 @@
+@startuml 03-secuencia-registrar-prestamo
+skinparam dpi 150
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam sequenceMessageAlign left
+skinparam responseMessageBelowArrow true
+skinparam noteBackgroundColor #FFF8DC
+skinparam noteBorderColor #B8860B
+
+title 03 · Secuencia «Registrar préstamo» — POST /api/prestamos
+
+actor "Usuario\n(cliente / Postman)" as Usuario
+participant ":PrestamoController" as C
+participant ":PrestamoService" as S
+participant ":EstudianteRepository" as ER
+participant ":LibroRepository" as LR
+participant ":PrestamoRepository" as PR
+participant "libro:Libro" as L
+participant "prestamo:Prestamo" as P
+participant ":GlobalExceptionHandler" as GEH
+
+Usuario -> C : 1: POST /api/prestamos {estudianteId, libroId}
+activate C
+C -> S : 2: registrarPrestamo(request)
+activate S
+note right of S : inicia transacción\n(@Transactional)
+
+S -> ER : 3: findById(estudianteId)
+ER --> S : Optional<Estudiante>
+
+opt estudiante no existe
+  S -> S : throw RecursoNoEncontradoException
+  note right of S : rollback, no se crea préstamo (R4)
+  S -> GEH : manejarNoEncontrado(ex)
+  GEH --> Usuario : 404 Not Found + ErrorResponse
+end
+
+S -> LR : 4: findById(libroId)
+LR --> S : Optional<Libro>
+
+opt libro no existe
+  S -> S : throw RecursoNoEncontradoException
+  note right of S : rollback, no se crea préstamo (R4)
+  S -> GEH : manejarNoEncontrado(ex)
+  GEH --> Usuario : 404 Not Found + ErrorResponse
+end
+
+S -> S : 5: validarDisponibilidad(libro)
+activate S
+S -> L : 5.1: isDisponible()
+L --> S : boolean
+S -> PR : 5.2: existsByLibroIdAndFechaDevolucionIsNull(libroId)
+PR --> S : boolean
+deactivate S
+
+alt libro disponible y sin préstamo activo (préstamo exitoso)
+  create P
+  S -> P : 6: <<create>> Prestamo(estudiante, libro, LocalDate.now())
+  S -> L : 7: marcarPrestado()
+  S -> LR : 8: save(libro)
+  LR --> S : Libro
+  S -> PR : 9: save(prestamo)
+  PR --> S : Prestamo guardado
+  S --> C : 10: PrestamoResponse\n(vía PrestamoResponse.desde(prestamo))
+  note right of S : commit: R2 + R3 se confirman juntos
+  C --> Usuario : 11: 201 Created + JSON PrestamoResponse
+else libro no disponible (409)
+  S -> S : throw LibroNoDisponibleException
+  note right of S : rollback, no se crea préstamo (R4)
+  S -> GEH : manejarNoDisponible(ex)
+  GEH --> Usuario : 409 Conflict + ErrorResponse
+end
+deactivate S
+deactivate C
+
+note over S, GEH
+  Las excepciones se propagan fuera del Service y Spring MVC
+  despacha cada una al método de GlobalExceptionHandler que la maneja.
+end note
+
+@enduml
