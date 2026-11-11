@@ -101,5 +101,7 @@ src/test/java/com/smartlibrary/
 docs/
 ├── trazabilidad.md
 ├── cambios-para-uml.md
-└── evidencias/   resultado-mvn-test.txt, surefire/, pruebas-manuales.md, colección Postman
+├── evidencias/   resultado-mvn-test.txt, surefire/, pruebas-manuales.md, colección Postman
+└── diagramas/    SmartLibrary-Bloque7.vpp (Visual Paradigm), 01–04 en PNG y SVG,
+                  plantuml/ (respaldo de los mismos 4 diagramas)
 ```
