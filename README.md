@@ -81,6 +81,34 @@ Los carga `DatosIniciales` (un `CommandLineRunner`) al arrancar, solo si las tab
 
 Ver la trazabilidad en [docs/trazabilidad.md](docs/trazabilidad.md).
 
+## Diagramas UML
+
+Hechos en Visual Paradigm: [docs/diagramas/SmartLibrary-Bloque7.vpp](docs/diagramas/SmartLibrary-Bloque7.vpp).
+Cada imagen tiene su versión SVG en la misma carpeta, y el respaldo en PlantUML está en
+[docs/diagramas/plantuml](docs/diagramas/plantuml).
+
+### 01 · Modelo inicial anotado
+
+`GestorPrestamos` antes del rediseño, con las observaciones O1–O10.
+
+![01 Modelo inicial anotado](docs/diagramas/01-modelo-inicial-anotado.png)
+
+### 02 · Clases por capas
+
+Controller → Service → Repository, con `model` y `dto` a un lado y `exception` al otro. Notas N1–N5.
+
+![02 Clases por capas](docs/diagramas/02-clases-por-capas.png)
+
+### 03 · Secuencia «Registrar préstamo» (POST /api/prestamos)
+
+Camino exitoso (201), libro no disponible (409) y recurso inexistente (404).
+
+![03 Secuencia registrar préstamo](docs/diagramas/03-secuencia-registrar-prestamo.png)
+
+### 04 · Secuencia «Consultar préstamos» (GET /api/prestamos)
+
+![04 Secuencia consultar préstamos](docs/diagramas/04-secuencia-consultar-prestamos.png)
+
 ## Estructura de paquetes
 
 ```
