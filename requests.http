@@ -1,0 +1,48 @@
+### SmartLibrary - peticiones de prueba (IntelliJ HTTP Client / VS Code REST Client)
+### Ejecutar en orden con la app recién levantada: ./mvnw spring-boot:run
+@baseUrl = http://localhost:8081/api/prestamos
+
+### 1. Préstamo de libro disponible (Ana, libro 2) -> 201 Created
+POST {{baseUrl}}
+Content-Type: application/json
+
+{
+  "estudianteId": 1,
+  "libroId": 2
+}
+
+### 2. Libro ya prestado (Ana, libro 3) -> 409 Conflict
+POST {{baseUrl}}
+Content-Type: application/json
+
+{
+  "estudianteId": 1,
+  "libroId": 3
+}
+
+### 3. Estudiante inexistente (999, libro 1) -> 404 Not Found
+POST {{baseUrl}}
+Content-Type: application/json
+
+{
+  "estudianteId": 999,
+  "libroId": 1
+}
+
+### 4. Libro inexistente (1, 999) -> 404 Not Found
+POST {{baseUrl}}
+Content-Type: application/json
+
+{
+  "estudianteId": 1,
+  "libroId": 999
+}
+
+### 5. Consulta de préstamos -> 200 OK
+GET {{baseUrl}}
+
+### 6. Solicitud inválida -> 400 Bad Request
+POST {{baseUrl}}
+Content-Type: application/json
+
+{}

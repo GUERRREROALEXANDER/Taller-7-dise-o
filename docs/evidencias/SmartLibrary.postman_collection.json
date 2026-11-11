@@ -1,0 +1,135 @@
+{
+  "info": {
+    "_postman_id": "6f2a3c1e-7b4d-4e8a-9c21-5d3f0a1b2c7e",
+    "name": "SmartLibrary - Préstamos",
+    "description": "Taller Bloque 7 - Diseño de Software. Ejecutar en orden con la aplicación recién levantada (./mvnw spring-boot:run).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8081" }
+  ],
+  "item": [
+    {
+      "name": "1. Préstamo de libro disponible (Ana, libro 2) - 201",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 201 Created\", function () { pm.response.to.have.status(201); });",
+              "pm.test(\"Header Location presente\", function () { pm.response.to.have.header(\"Location\"); });",
+              "pm.test(\"Body con id\", function () { pm.expect(pm.response.json().id).to.be.a(\"number\"); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": { "mode": "raw", "raw": "{\n  \"estudianteId\": 1,\n  \"libroId\": 2\n}" },
+        "url": { "raw": "{{baseUrl}}/api/prestamos", "host": [ "{{baseUrl}}" ], "path": [ "api", "prestamos" ] }
+      }
+    },
+    {
+      "name": "2. Libro ya prestado (Ana, libro 3) - 409",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 409 Conflict\", function () { pm.response.to.have.status(409); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": { "mode": "raw", "raw": "{\n  \"estudianteId\": 1,\n  \"libroId\": 3\n}" },
+        "url": { "raw": "{{baseUrl}}/api/prestamos", "host": [ "{{baseUrl}}" ], "path": [ "api", "prestamos" ] }
+      }
+    },
+    {
+      "name": "3. Estudiante inexistente (999, libro 1) - 404",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 404 Not Found\", function () { pm.response.to.have.status(404); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": { "mode": "raw", "raw": "{\n  \"estudianteId\": 999,\n  \"libroId\": 1\n}" },
+        "url": { "raw": "{{baseUrl}}/api/prestamos", "host": [ "{{baseUrl}}" ], "path": [ "api", "prestamos" ] }
+      }
+    },
+    {
+      "name": "4. Libro inexistente (1, 999) - 404",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 404 Not Found\", function () { pm.response.to.have.status(404); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": { "mode": "raw", "raw": "{\n  \"estudianteId\": 1,\n  \"libroId\": 999\n}" },
+        "url": { "raw": "{{baseUrl}}/api/prestamos", "host": [ "{{baseUrl}}" ], "path": [ "api", "prestamos" ] }
+      }
+    },
+    {
+      "name": "5. Consulta de préstamos - 200",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200 OK\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"Lista no vacía\", function () { pm.expect(pm.response.json()).to.be.an(\"array\").that.is.not.empty; });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/api/prestamos", "host": [ "{{baseUrl}}" ], "path": [ "api", "prestamos" ] }
+      }
+    },
+    {
+      "name": "6. Solicitud inválida ({}) - 400",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 400 Bad Request\", function () { pm.response.to.have.status(400); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": { "mode": "raw", "raw": "{}" },
+        "url": { "raw": "{{baseUrl}}/api/prestamos", "host": [ "{{baseUrl}}" ], "path": [ "api", "prestamos" ] }
+      }
+    }
+  ]
+}
