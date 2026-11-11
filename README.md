@@ -83,7 +83,8 @@ Ver la trazabilidad en [docs/trazabilidad.md](docs/trazabilidad.md).
 
 ## Diagramas UML
 
-Hechos en Visual Paradigm: [docs/diagramas/SmartLibrary-Bloque7.vpp](docs/diagramas/SmartLibrary-Bloque7.vpp).
+Hechos en Visual Paradigm: [SmartLibrary-Bloque7.vpp](SmartLibrary-Bloque7.vpp) (raíz del repositorio;
+también en [docs/diagramas](docs/diagramas/SmartLibrary-Bloque7.vpp)). Se abre con Visual Paradigm.
 Cada imagen tiene su versión SVG en la misma carpeta, y el respaldo en PlantUML está en
 [docs/diagramas/plantuml](docs/diagramas/plantuml).
 
